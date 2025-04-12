@@ -61,20 +61,3 @@ Abaixo está o histórico de comandos utilizados durante o desenvolvimento e exe
   10 git checkout feature/exercicio6
   11 git checkout -b feature/exercicio6
 ```
-
-## Contribuição
-Sinta-se à vontade para contribuir com melhorias para este microserviço. Para isso, siga os passos abaixo:
-1. Faça um fork deste repositório.
-2. Crie uma nova branch para sua feature:
-   ```bash
-   git checkout -b exercicio6
-   ```
-3. Faça suas alterações e commit:
-   ```bash
-   git add .
-   git commit -m "subindo o exercicio 6 do CP"
-   ```
-4. Envie suas alterações:
-   ```bash
-   git push origin exercicio6
-   ```
