@@ -61,3 +61,20 @@ Abaixo está o histórico de comandos utilizados durante o desenvolvimento e exe
   10 git checkout feature/exercicio6
   11 git checkout -b feature/exercicio6
 ```
+
+## Outra maneira de verificar a rota `/status`
+Para verificar se a rota `/status` está funcionando corretamente use o navegador, siga os passos abaixo:
+
+1. Certifique-se de que o container do microserviço está em execução.
+2. Abra o navegador de sua preferência.
+3. Digite o seguinte endereço na barra de URL:
+   ```
+   http://localhost:5000/status
+   ```
+4. Você deverá ver a seguinte resposta na tela:
+   ```json
+   {
+     "message": "O microsservico esta OK", 
+     "status": "online"
+   }
+   ```
