@@ -1,80 +1,178 @@
 # Meu Microserviço
 
 ## Descrição
-Este é um microserviço desenvolvido para atender às necessidades do projeto CP2. Ele foi criado utilizando Python e Docker, permitindo fácil implantação e escalabilidade. O microserviço está configurado para rodar na porta 5000 e pode ser gerenciado utilizando os comandos Docker descritos abaixo.
+Este é um microserviço desenvolvido para atender às necessidades do projeto CP2. Ele utiliza Docker para gerenciar um banco de dados MySQL e um backend Python. O microserviço está configurado para rodar na porta 5000 e pode ser gerenciado utilizando os comandos descritos abaixo.
 
-## Requisitos
-- Python 3.8 ou superior
-- Docker
-- Git
+---
 
-## Como executar
-1. Certifique-se de que o Docker está instalado e em execução na sua máquina.
-2. Construa a imagem Docker do microserviço:
-   ```bash
-   docker build -t meu-microservico .
-   ```
-3. Execute o container do microserviço:
-   ```bash
-   docker run -d --name container-meu-microservico -p 5000:5000 meu-microservico
-   ```
-4. Para acessar o container em execução:
-   ```bash
-   docker exec -it container-meu-microservico bash
-   ```
-5. Verifique o status do microserviço:
-   ```bash
-   curl http://localhost:5000/status
-   ```
-   Exemplo de resposta:
-   ```json
-   {
-     "message": "O microsservico esta OK", 
-     "status": "online"
-   }
-   ```
-6. Verifique os containers em execução:
-   ```bash
-   docker ps
-   ```
-   Exemplo de saída:
-   ```plaintext
-   CONTAINER ID   IMAGE              COMMAND           CREATED          STATUS          PORTS                    NAMES
-   8825b60abcbf   meu-microservico   "python app.py"   15 minutes ago   Up 15 minutes   0.0.0.0:5000->5000/tcp   container-meu-microservico
-   ```
+## 📦 Parte 1: Persistência com Volumes
 
-## Histórico de Comandos
-Abaixo está o histórico de comandos utilizados durante o desenvolvimento e execução do microserviço:
+### Implementação
+Foi utilizado um **Docker Volume** chamado `dados_mysql` para persistir os dados do banco de dados MySQL. A escolha foi feita porque volumes são gerenciados diretamente pelo Docker, oferecendo maior simplicidade e portabilidade em comparação com bind mounts, além de serem mais seguros para armazenar dados sensíveis.
 
-```plaintext
-  Id CommandLine
-  -- -----------
-   1 try { . "c:\Users\Coelho\AppData\Local\Programs\Microsoft VS Code\resources\app\out\vs\workbench\contrib\terminal\common\scripts\shellIntegration.ps1" } catch {}
-   2 git status
-   3 git add .
-   4 git commit -m "iniciando CP"
-   5 git push
-   6 docker build -t meu-microservico .
-   7 docker run -d --name container-meu-microservico -p 5000:5000 meu-microservico
-   8 docker exec -it container-meu-microservico bash
-   9 docker ps
-  10 git checkout feature/exercicio6
-  11 git checkout -b feature/exercicio6
+Comando para criar o volume:
+```bash
+docker volume create dados_mysql
 ```
 
-## Contribuição
-Sinta-se à vontade para contribuir com melhorias para este microserviço. Para isso, siga os passos abaixo:
-1. Faça um fork deste repositório.
-2. Crie uma nova branch para sua feature:
+## 🛢️ Parte 2: Container com MySQL
+
+### Configuração do Banco de Dados
+
+
+Comando para iniciar o container com o volume (estilo multi-linha):
+```bash
+docker run -d --name mysql-container \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=mysql_db \
+  -e MYSQL_USER=william \
+  -e MYSQL_PASSWORD=fiap123@ \
+  -p 3307:3306 \
+  -v dados_mysql:/var/lib/mysql \
+  mysql:8.0
+```
+
+Comando para iniciar o container com o volume (estilo linha única):
+```bash
+docker run -d --name mysql-container -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=mysql_db -e MYSQL_USER=william -e MYSQL_PASSWORD=fiap123@ -p 3307:3306 -v dados_mysql:/var/lib/mysql mysql:8.0
+```
+
+---
+
+
+1. Copie o script de inicialização para o container:
    ```bash
-   git checkout -b exercicio6
+   docker cp ./init.sql mysql-container:/docker-entrypoint-initdb.d/init.sql
    ```
-3. Faça suas alterações e commit:
+
+2. Acesse o container:
    ```bash
-   git add .
-   git commit -m "subindo o exercicio 6 do CP"
+   docker exec -it mysql-container bash
    ```
-4. Envie suas alterações:
+
+3. No terminal do container, acesse o MySQL:
    ```bash
-   git push origin exercicio6
+   mysql -u root -p
    ```
+   Digite a senha `root` quando solicitado.
+
+4. Execute os seguintes comandos no MySQL para inicializar o banco de dados:
+   ```sql
+   use mysql_db; show tables; source /docker-entrypoint-initdb.d/init.sql;
+   ```
+
+5. Verifique as tabelas e os dados inseridos:
+   ```sql
+   use mysql_db; show tables; select * from clientes;
+   ```
+
+Exemplo de saída:
+```plaintext
++----+----------------+------------------+-------------+------------+
+| id | nome           | email            | telefone    | endereco   |
++----+----------------+------------------+-------------+------------+
+|  1 | Carlos Silva   | carlos@email.com | 11999999999 | Rua A, 123 |
+|  2 | Ana Souza      | ana@email.com    | 11988888888 | Rua B, 456 |
+|  3 | Pedro Lima     | pedro@email.com  | 11977777777 | Rua C, 789 |
+|  4 | Maria Oliveira | maria@email.com  | 11966666666 | Rua D, 101 |
+|  5 | João Santos    | joao@email.com   | 11955555555 | Rua E, 202 |
++----+----------------+------------------+-------------+------------+
+```
+
+---
+
+## 🧱 Parte 3: Imagem Personalizada
+
+### Criação de Imagens Personalizadas
+1. Comite o container para criar imagens personalizadas:
+   ```bash
+   docker commit mysql-container mysql_db:v1
+   docker commit mysql-container mysql_db:v2
+   ```
+
+2. Liste as imagens criadas:
+   ```bash
+   docker images | Select-String mysql_db
+   ```
+
+3. Adicione tags às imagens:
+   ```bash
+   docker tag mysql_db:v1 william201192/mysql_db:v1
+   docker tag mysql_db:v2 william201192/mysql_db:v2
+   ```
+
+---
+
+## ☁️ Parte 4: Docker Hub
+
+### Publicação das Imagens
+1. Faça login no Docker Hub:
+   ```bash
+   docker login
+   ```
+
+2. Envie as imagens para o Docker Hub:
+   ```bash
+   docker push william201192/mysql_db:v1
+   docker push william201192/mysql_db:v2
+   ```
+
+Links das imagens:
+- [mysql_db:v1](https://hub.docker.com/repository/docker/william201192/mysql_db/tags?page=1&name=v1)
+- [mysql_db:v2](https://hub.docker.com/repository/docker/william201192/mysql_db/tags?page=1&name=v2)
+
+
+LINK:
+https://hub.docker.com/repository/docker/william201192/mysql_db/tags
+
+
+---
+
+## 🔁 Parte 5: Testar Persistência
+
+### Demonstração
+Os dados foram preservados após reiniciar e recriar o container, graças ao uso do volume `dados_mysql`.
+
+#### Reinicializar o Container
+```bash
+docker stop mysql-container
+docker start mysql-container
+```
+
+#### Verificar os Dados Após Reinicialização
+```bash
+docker exec -it mysql-container bash
+mysql -u root -p
+use mysql_db;
+show tables;
+select * from clientes;
+```
+
+#### Recriar o Container
+```bash
+docker stop mysql-container
+docker rm mysql-container
+docker run -d --name mysql-container -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=mysql_db -e MYSQL_USER=william -e MYSQL_PASSWORD=fiap123@ -p 3307:3306 -v dados_mysql:/var/lib/mysql mysql:8.0
+```
+
+#### Verificar os Dados Após Recriação
+```bash
+docker exec -it mysql-container bash
+mysql -u root -p
+use mysql_db;
+show tables;
+select * from clientes;
+```
+
+Exemplo de saída:
+```plaintext
++----+----------------+------------------+-------------+------------+
+| id | nome           | email            | telefone    | endereco   |
++----+----------------+------------------+-------------+------------+
+|  1 | Carlos Silva   | carlos@email.com | 11999999999 | Rua A, 123 |
+|  2 | Ana Souza      | ana@email.com    | 11988888888 | Rua B, 456 |
+|  3 | Pedro Lima     | pedro@email.com  | 11977777777 | Rua C, 789 |
+|  4 | Maria Oliveira | maria@email.com  | 11966666666 | Rua D, 101 |
+|  5 | João Santos    | joao@email.com   | 11955555555 | Rua E, 202 |
++----+----------------+------------------+-------------+------------+
+```
